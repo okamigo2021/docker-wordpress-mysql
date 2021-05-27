@@ -1,0 +1,48 @@
+version: '3.3'
+services:
+  db:
+    image: "mysql:5.7"
+    networks:
+      - net
+    restart: always
+    healthcheck:
+      test: "/etc/init.d/mysql status"
+      interval: 3s
+      timeout: 1s
+      retries: 5
+    container_name: php_test_mysql
+    #ports:
+      #- "3306:3306"
+    volumes:
+     - db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+
+  wordpress:
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - net
+    build:
+      context: ./webserver
+    container_name: php_test_app
+    working_dir: /var/www/html/
+    ports:
+      - "8000:80"
+    volumes:
+      - ./wp-config.php:/var/www/html/wp-config.php
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 200s
+      timeout: 200s
+      retries: 5
+volumes:
+  db: {}
+
+networks:
+  net:
+    driver: bridge
